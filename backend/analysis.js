@@ -34,6 +34,7 @@ function parseModelResult(raw) {
     confidence: null, red_flags: data.red_flags,
     explanation: data.explanation, safe_action: data.safe_action,
     analysis_source: 'Ollama (llama3.2:3b)', llmUsed: true,
+    sender_status: 'UNVERIFIED',
   };
 }
 

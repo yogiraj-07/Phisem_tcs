@@ -19,7 +19,7 @@ export const analyzeMessage = async (request: AnalysisRequest): Promise<Analysis
       !Array.isArray(data.red_flags) || !data.red_flags.every((flag: unknown) => typeof flag === 'string') ||
       typeof data.explanation !== 'string' || typeof data.safe_action !== 'string' ||
       typeof data.analysis_source !== 'string' || typeof data.llmUsed !== 'boolean' ||
-      data.confidence !== null) {
+      data.confidence !== null || data.sender_status !== 'UNVERIFIED') {
     throw new Error('The service returned an invalid analysis. Please retry.');
   }
   return data;

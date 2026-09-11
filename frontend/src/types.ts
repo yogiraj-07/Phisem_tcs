@@ -11,5 +11,6 @@ export interface AnalysisResponse {
   safe_action: string;
   analysis_source: string;
   llmUsed: boolean;
+  sender_status: 'UNVERIFIED';
 }
 

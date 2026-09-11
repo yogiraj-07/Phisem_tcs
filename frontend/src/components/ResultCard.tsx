@@ -51,10 +51,10 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
               {icon}
             </div>
             <div>
-              <h2 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-1">Threat Assessment</h2>
+              <h2 className="text-sm font-bold text-text-muted uppercase tracking-wider mb-1">Text Risk Assessment</h2>
               <div className="flex items-center gap-3">
                 <span className={`px-3 py-1 text-xs sm:text-sm font-extrabold uppercase tracking-wide rounded-full border ${badgeColor}`}>
-                  {result.risk}
+                  {isSafe ? 'Low text risk' : result.risk}
                 </span>
               </div>
             </div>
@@ -75,7 +75,11 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
 
       <div className="p-6 sm:p-8 space-y-8 bg-surface-bg/30">
         
-<p className="text-sm text-text-muted">Source: {result.analysis_source}. Risk score is an estimate, not a probability or guarantee of safety.</p>
+<div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950">
+          <p className="font-bold">Sender unverified</p>
+          <p className="text-sm mt-1">Pasted text cannot establish who sent a message. A low score does not confirm authenticity. For bank or payment requests, open the official app independently or contact a known official number.</p>
+        </div>
+        <p className="text-sm text-text-muted">Source: {result.analysis_source}. Risk score is an estimate, not a probability or guarantee of safety.</p>
         {/* Red Flags Section */}
         {result.red_flags && result.red_flags.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">

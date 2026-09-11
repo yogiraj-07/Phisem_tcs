@@ -18,10 +18,10 @@ export const HowItWorks: React.FC = () => {
   const x = useTransform(smoothProgress, [0, 1], ["5%", "-75%"]);
 
   const steps = [
-    { icon: <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Ingestion", desc: "Raw payload is received securely." },
-    { icon: <Shield className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Guardrails", desc: "Pre-processing & deep sanitization." },
+    { icon: <FileText className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Ingestion", desc: "A mock message is submitted for review." },
+    { icon: <Shield className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Guardrails", desc: "Input checks and keyword clues." },
     { icon: <BrainCircuit className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Analysis", desc: "LLM semantic pattern evaluation." },
-    { icon: <Activity className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Scoring", desc: "Risk confidence metric generated." },
+    { icon: <Activity className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Scoring", desc: "Estimated text risk, with sender unverified." },
     { icon: <CheckCircle2 className="h-8 w-8 sm:h-12 sm:w-12 text-brand-600" />, title: "Resolution", desc: "Actionable security output delivered." },
   ];
 
@@ -87,3 +87,4 @@ export const HowItWorks: React.FC = () => {
     </section>
   );
 };
+
