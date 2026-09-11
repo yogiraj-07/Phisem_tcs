@@ -16,6 +16,10 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
       setError("Please enter a message to analyze.");
       return;
     }
+    if (message.length > 1000) {
+      setError("Message must be 1,000 characters or fewer.");
+      return;
+    }
     setError("");
     onAnalyze({ message });
   };
@@ -25,9 +29,11 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
       <div className="p-5 sm:p-6 lg:p-8">
         <h2 className="text-lg sm:text-xl font-bold text-text-main mb-4">Message Analyzer</h2>
         
+        <p className="text-sm text-text-muted mb-3">Use mock messages only. Do not enter real OTPs, passwords, bank details or student data.</p>
         <div className="relative">
           <textarea
             id="message-input"
+            aria-label="Message to analyze"
             className={`w-full h-40 sm:h-48 p-4 bg-surface-bg border ${error ? 'border-status-danger ring-1 ring-status-danger' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all resize-y min-h-[120px] text-text-main text-sm sm:text-base`}
             placeholder="Paste suspicious email, SMS, or chat message here..."
             value={message}
@@ -39,7 +45,7 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
             aria-invalid={!!error}
           />
           <div className="absolute bottom-3 right-4 text-xs font-semibold text-text-muted bg-surface-bg/90 px-2 py-1 rounded shadow-sm backdrop-blur-sm">
-            {message.length} characters
+            {message.length}/1,000 characters
           </div>
         </div>
 
@@ -73,3 +79,4 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
     </div>
   );
 };
+

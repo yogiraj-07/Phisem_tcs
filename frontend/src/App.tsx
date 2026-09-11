@@ -11,17 +11,18 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
   const [result, setResult] = useState<AnalysisResponse | null>(null);
 
   const handleAnalyze = async (request: AnalysisRequest) => {
     setIsLoading(true);
     setResult(null);
+    setError('');
     try {
       const data = await analyzeMessage(request);
       setResult(data);
     } catch (error) {
-      console.error(error);
-      // Let the mock handle errors gracefully or you can show a toast here
+      setError(error instanceof Error ? error.message : 'Analysis failed. Please retry.');
     } finally {
       setIsLoading(false);
     }
@@ -42,6 +43,7 @@ export default function App() {
             <Analyzer onAnalyze={handleAnalyze} isLoading={isLoading} />
           </motion.div>
           
+          {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">{error}</p>}
           <AnimatePresence>
             {result && (
               <motion.div 
@@ -83,3 +85,4 @@ export default function App() {
     </div>
   );
 }
+
