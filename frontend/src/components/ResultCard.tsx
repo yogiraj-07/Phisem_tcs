@@ -62,19 +62,20 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
           
           <div className="flex flex-col w-full md:w-64 bg-surface-bg p-4 rounded-xl border border-gray-100">
             <div className="flex justify-between items-end w-full mb-2">
-              <span className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Activity className="h-3.5 w-3.5"/> Confidence</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Activity className="h-3.5 w-3.5"/> Risk score</span>
               <span className="text-xl font-black leading-none text-text-main">
-                <CountUp from={0} to={result.confidence} duration={1.5} />%
+                <CountUp from={0} to={result.risk_score} duration={1.5} />/100
               </span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2.5 overflow-hidden">
-               <div className={`h-full ${progressColor} transition-all duration-1000 ease-out`} style={{ width: `${result.confidence}%` }}></div>
+               <div className={`h-full ${progressColor} transition-all duration-1000 ease-out`} style={{ width: `${result.risk_score}%` }}></div>
             </div>
           </div>
         </div>
 
       <div className="p-6 sm:p-8 space-y-8 bg-surface-bg/30">
         
+<p className="text-sm text-text-muted">Source: {result.analysis_source}. Risk score is an estimate, not a probability or guarantee of safety.</p>
         {/* Red Flags Section */}
         {result.red_flags && result.red_flags.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
@@ -100,7 +101,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-200 flex flex-col">
              <h3 className="text-sm font-bold text-text-main flex items-center gap-2 mb-4">
                 <BrainCircuit className="h-5 w-5 text-brand-500" /> 
-                AI Reasoning
+                Analysis explanation
              </h3>
              <div className="bg-white p-5 sm:p-6 rounded-xl border border-gray-100 shadow-sm flex-grow">
                <p className="text-text-main leading-relaxed text-sm sm:text-base whitespace-pre-wrap break-words font-medium">
@@ -131,3 +132,4 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
     </AnimatedContent>
   );
 };
+
