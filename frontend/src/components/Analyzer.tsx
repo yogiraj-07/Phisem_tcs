@@ -5,9 +5,10 @@ import { AnalysisRequest } from "../types";
 interface AnalyzerProps {
   onAnalyze: (request: AnalysisRequest) => void;
   isLoading: boolean;
+  onMessageChange: () => void;
 }
 
-export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
+export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading, onMessageChange }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -39,6 +40,7 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
             value={message}
             onChange={(e) => {
               setMessage(e.target.value);
+              onMessageChange();
               if (error) setError("");
             }}
             disabled={isLoading}

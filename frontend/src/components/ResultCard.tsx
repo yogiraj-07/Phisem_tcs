@@ -62,7 +62,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
           
           <div className="flex flex-col w-full md:w-64 bg-surface-bg p-4 rounded-xl border border-gray-100">
             <div className="flex justify-between items-end w-full mb-2">
-              <span className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Activity className="h-3.5 w-3.5"/> Risk score</span>
+              <span className="text-xs font-bold text-text-muted uppercase tracking-wider flex items-center gap-1.5"><Activity className="h-3.5 w-3.5"/> Estimated risk</span>
               <span className="text-xl font-black leading-none text-text-main">
                 <CountUp from={0} to={result.risk_score} duration={1.5} />/100
               </span>
@@ -79,21 +79,23 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
           <p className="font-bold">Sender unverified</p>
           <p className="text-sm mt-1">Pasted text cannot establish who sent a message. A low score does not confirm authenticity. For bank or payment requests, open the official app independently or contact a known official number.</p>
         </div>
+        {result.context_status === 'NEEDS_CONTEXT' && <p className="rounded-lg bg-amber-50 p-3 font-semibold text-amber-900">More context needed. This assessment is provisional.</p>}
+        {result.expectation && <p className="text-sm text-text-muted">Your context: {result.expectation === 'yes' ? 'You expected or initiated this message.' : result.expectation === 'no' ? 'You did not expect or initiate this message.' : 'You are not sure whether this message was expected.'}</p>}
         <p className="text-sm text-text-muted">Source: {result.analysis_source}. Risk score is an estimate, not a probability or guarantee of safety.</p>
         {/* Red Flags Section */}
-        {result.red_flags && result.red_flags.length > 0 && (
+        {result.evidence && result.evidence.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">
             <h3 className="text-sm font-bold text-text-main flex items-center gap-2 mb-4">
               <AlertCircle className="h-5 w-5 text-status-warning" /> 
               Identified Threat Indicators
             </h3>
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
-              {result.red_flags.map((flag, idx) => (
+              {result.evidence.map((flag, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-4 bg-white border border-red-100 shadow-sm rounded-xl transition-transform hover:-translate-y-0.5 hover:shadow-md">
                   <div className="bg-red-50 p-2 rounded-lg flex-shrink-0">
                     <Fingerprint className="h-5 w-5 text-status-danger opacity-90" />
                   </div>
-                  <span className="font-semibold text-text-main text-sm sm:text-base leading-snug mt-1">{flag}</span>
+                  <span className="font-semibold text-text-main text-sm sm:text-base leading-snug mt-1">{flag.reason}<span className="block mt-2 text-sm font-normal break-words">“{flag.quote}”</span></span>
                 </div>
               ))}
             </div>

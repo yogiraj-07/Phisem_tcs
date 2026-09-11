@@ -11,12 +11,14 @@ import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(false);
+  const [request, setRequest] = useState<AnalysisRequest | null>(null);
   const [error, setError] = useState('');
   const [result, setResult] = useState<AnalysisResponse | null>(null);
 
   const handleAnalyze = async (request: AnalysisRequest) => {
     setIsLoading(true);
-    setResult(null);
+    setRequest(request);
+    if (!request.expectation) setResult(null);
     setError('');
     try {
       const data = await analyzeMessage(request);
@@ -40,7 +42,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Analyzer onAnalyze={handleAnalyze} isLoading={isLoading} />
+            <Analyzer onAnalyze={handleAnalyze} isLoading={isLoading} onMessageChange={() => { setResult(null); setRequest(null); setError(''); }} />
           </motion.div>
           
           {error && <p role="alert" className="mt-4 rounded-lg border border-red-200 bg-red-50 p-4 text-red-800">{error}</p>}
@@ -56,6 +58,21 @@ export default function App() {
                 className="mt-8 sm:mt-12 overflow-hidden"
               >
                 <ResultCard result={result} />
+                {result.follow_up && request && (
+                  <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50 p-5" aria-busy={isLoading}>
+                    <p className="font-semibold">{result.follow_up.question}</p>
+                    <p className="text-sm mt-1">Your answer adds context; it does not verify the sender.</p>
+                    <div className="flex flex-wrap gap-3 mt-4">
+                      {(['yes', 'no', 'unsure'] as const).map(answer => (
+                        <button key={answer} disabled={isLoading} onClick={() => handleAnalyze({ message: request.message, expectation: answer })}
+                          className="rounded-lg border border-blue-300 bg-white px-4 py-2 font-semibold disabled:opacity-50">
+                          {answer === 'unsure' ? 'Not sure' : answer === 'yes' ? 'Yes' : 'No'}
+                        </button>
+                      ))}
+                    </div>
+                    {isLoading && <p role="status" className="mt-3">Reassessing with your answer…</p>}
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>

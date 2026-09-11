@@ -1,6 +1,6 @@
 # Phisem — Message Phishing Detector
 
-A prototype for assessing mock messages across banking, work, shopping, deliveries, education and personal conversations. Arbitrary questions, greetings and code are treated as text to assess, not commands to answer or execute. React/TypeScript frontend, Express backend, keyword rules and local Ollama (`llama3.2:3b`).
+A prototype for assessing mock messages across banking, work, shopping, deliveries, education and personal conversations. Arbitrary questions, greetings and code are treated as text to assess, not commands to answer or execute. React/TypeScript frontend, Express backend, evidence-based contextual review and local Ollama (`llama3.2:3b`).
 
 ## Run locally
 
@@ -19,7 +19,7 @@ Production hosting must also route `/analyze` to Express; the development proxy 
 
 Successful responses contain `risk`, `risk_score` (0–100), `confidence` (null; no calibrated confidence is available), `red_flags`, `explanation`, `safe_action`, `analysis_source`, `llmUsed`, and `sender_status` (always UNVERIFIED). The UI displays SAFE as Low text risk; copied text cannot authenticate a sender.
 
-Scores: 0–29 SAFE, 30–59 SUSPICIOUS, 60–100 HIGH RISK. Rules count each category once and pass candidate indicators to Ollama. Every valid message receives contextual Ollama analysis, including messages with many keyword matches. Keyword scores never bypass that review. Rules remain approximate and can flag legitimate messages. Scores are not probabilities; SAFE does not verify authenticity. Links are not fetched and AI authorship is not established.
+Scores: 0–29 SAFE, 30–59 SUSPICIOUS, 60–100 HIGH RISK. Every valid message receives contextual Ollama analysis. The model must supply exact message excerpts for concrete risk evidence. Unknown sender identity, a link or an unfamiliar domain alone must not raise risk under the assessment instructions. This semantic rule still needs evaluation with real model outputs. Model judgments remain approximate and can flag legitimate messages. Scores are not probabilities; SAFE does not verify authenticity. Links are not fetched and AI authorship is not established.
 
 Validation errors return 400, oversized request bodies 413, unavailable Ollama 503, model timeout 504, and invalid model output 502. The UI displays errors without fabricating analysis.
 
@@ -51,3 +51,11 @@ Compare these mock messages in the UI. All results must say Sender unverified. T
 If AI analysis fails, run `ollama run llama3.2:3b` on the computer running Express and send it `hello`. If the model is missing, run `ollama pull llama3.2:3b`. If the service is unreachable, open Ollama or run `ollama serve`. A first request can time out while the model loads; retry after it responds locally.
 
 This is an assessment tool, not a general Q&A assistant. Supporting varied text does not establish production readiness: real model evaluation on labeled examples, false-positive measurements, abuse/rate limits and deployment hardening remain necessary.
+
+## Evidence and follow-up context
+
+Results include `evidence` (category, exact quote, reason), `context_status`, `follow_up` and `expectation`. The server checks quotes against the submitted message and rejects elevated scores without evidence. This checks grounding, not whether the model interpreted the excerpt correctly.
+
+If expectation matters, the UI asks whether you applied, initiated or expected the message. Select Yes / No / Not sure to resubmit the same message with `expectation: "yes" | "no" | "unsure"`. This is user-reported context, never sender authentication. Not sure can retain More context needed; the question is not repeated. Editing the message clears its assessment and answer.
+
+Mock regression example: `You are selected for the Pilot Training Course. Visit https://training.example.` Expect a contextual question when the model identifies that expectation matters, no invented OTP/payment claim, and no link-only risk flag. Try all three answers separately. Model-generated question selection and risk remain subject to real-model evaluation.
