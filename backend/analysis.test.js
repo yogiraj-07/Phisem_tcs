@@ -26,7 +26,7 @@ test('input validation rejects missing, non-string, blank and oversized messages
 test('normal and legacy requests use the structured model schema', async () => {
   await withApi(async payload => {
     assert.equal(payload.format, 'json');
-    assert.match(payload.system, /Required JSON structure:/);
+    assert.match(payload.system, /Example inputs and completed assessments/);
     assert.match(payload.system, /\"evidence\"/);
     return { data: { response: JSON.stringify(mockResult) } };
   }, async post => {
@@ -181,5 +181,25 @@ test('assessment requests avoid full schema grammar and preserve correction inst
   assert.equal(payload.format, 'json');
   assert.deepEqual(JSON.parse(payload.prompt), { message: 'Test message', expectation: 'no' });
   assert.match(payload.system, /Copy each evidence quote exactly/);
-  assert.match(payload.system, /Required JSON structure:/);
+  assert.match(payload.system, /Example inputs and completed assessments/);
+});
+
+
+test('reported schema-shaped output is rejected instead of converted to a verdict', () => {
+  const raw = JSON.stringify({ type: 'object', properties: {
+    risk_score: { type: 'integer', minimum: 0, maximum: 100 },
+    evidence: [{ category: 'other', quote: '', reason: 'No concrete evidence' }],
+    needs_context: false, explanation: 'Meeting notice', safe_action: 'Verify independently',
+  } });
+  assert.throws(() => parseAssessment(raw, 'Your study group meets tomorrow at 10 AM.'), err => err.code === 'INVALID_FIELDS');
+});
+test('prompt contains completed examples and no serialized JSON schema', () => {
+  const { assessmentPayload, examples } = require('./assessment');
+  const payload = assessmentPayload('A different message');
+  assert.ok(!payload.system.includes('"properties":'));
+  assert.ok(!payload.system.includes('"type":"integer"'));
+  for (const example of examples) {
+    const result = parseAssessment(JSON.stringify(example.output), example.input.message);
+    assert.equal(result.sender_status, 'UNVERIFIED');
+  }
 });

@@ -28,6 +28,9 @@ async function diagnose(generate = (payload, options) => axios.post('http://127.
         log(`Validation passed: ${assessment.risk}, ${assessment.risk_score}/100`);
       } catch (err) {
         log(`Validation failed: ${err.code ?? 'INVALID_FIELDS'}`);
+        // This command only submits the fixed mock message above.
+        const raw = response?.data?.response;
+        if (typeof raw === 'string') log(`Model response for mock request: ${raw.slice(0, 5000)}`);
         return false;
       }
     }
