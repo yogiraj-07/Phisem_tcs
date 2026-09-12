@@ -69,3 +69,7 @@ The backend terminal prints `[analysis validation] CODE` without the submitted m
 ## Ollama works in the CLI but Phisem fails
 
 From the backend folder run `node diagnose-ollama.js`. This tests a basic schema and the full Phisem request using the same Node/Axios transport as Express, with a fixed mock study-group message. It reports HTTP/transport errors or a validation code. No user messages are read. If both tests pass, restart the backend and reproduce the website request. The backend logs `[ollama request]` with only error code and HTTP status, not submitted content.
+
+## Grammar compilation compatibility
+
+Assessment requests use `format: "json"` and include the required schema in the system instructions. This avoids asking the Ollama runtime to compile the full constrained schema, which caused HTTP 400 `failed to parse grammar` on the reported installation. Backend field/evidence/context validation and the single correction retry still apply. The diagnostic and Express share the same assessment request builder. Real-model success must be checked locally; JSON mode alone does not ensure correct fields or conclusions.

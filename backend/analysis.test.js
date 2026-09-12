@@ -25,8 +25,9 @@ test('input validation rejects missing, non-string, blank and oversized messages
 });
 test('normal and legacy requests use the structured model schema', async () => {
   await withApi(async payload => {
-    assert.equal(payload.format.type, 'object');
-    assert.equal(payload.format.properties.evidence.type, 'array');
+    assert.equal(payload.format, 'json');
+    assert.match(payload.system, /Required JSON structure:/);
+    assert.match(payload.system, /\"evidence\"/);
     return { data: { response: JSON.stringify(mockResult) } };
   }, async post => {
     for (const body of [{ message: 'Class is at 10 AM.' }, { text: 'Class is at 10 AM.' }]) {
@@ -160,7 +161,7 @@ test('diagnostic exercises basic and full requests and identifies HTTP rejection
   const ok = await diagnose(async payload => {
     calls++;
     if (calls === 1) return { status: 200, data: { response: '{"risk_score":10}' } };
-    assert.equal(payload.format.properties.evidence.type, 'array');
+    assert.equal(payload.format, 'json');
     throw { code: 'ERR_BAD_REQUEST', response: { status: 400, data: { error: 'schema rejected' } } };
   }, line => logs.push(line));
   assert.equal(ok, false);
@@ -171,4 +172,14 @@ test('diagnostic exercises basic and full requests and identifies HTTP rejection
 test('diagnostic validates successful full response', async () => {
   const { diagnose } = require('./diagnose-ollama');
   assert.equal(await diagnose(async () => ({ status: 200, data: { response: JSON.stringify(mockResult) } }), () => {}), true);
+});
+
+
+test('assessment requests avoid full schema grammar and preserve correction instructions', () => {
+  const { assessmentPayload } = require('./assessment');
+  const payload = assessmentPayload('Test message', 'no', 'QUOTE_NOT_IN_MESSAGE');
+  assert.equal(payload.format, 'json');
+  assert.deepEqual(JSON.parse(payload.prompt), { message: 'Test message', expectation: 'no' });
+  assert.match(payload.system, /Copy each evidence quote exactly/);
+  assert.match(payload.system, /Required JSON structure:/);
 });

@@ -1,7 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
-const { modelSchema, systemPrompt, parseAssessment, validationHints } = require('./assessment');
+const { assessmentPayload, parseAssessment, validationHints } = require('./assessment');
 
 function createApp(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), reportValidation = code => console.warn('[analysis validation]', code), reportTransport = detail => console.warn('[ollama request]', detail)) {
   const app = express();
@@ -28,12 +28,7 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
       try {
         const timeout = deadline - Date.now();
         if (timeout <= 0) throw Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' });
-        response = await generate({
-          model: 'llama3.2:3b', stream: false, format: modelSchema,
-          system: systemPrompt + (validationCode ? '\nA prior attempt failed validation. Reassess the original message. Correction: ' + validationHints[validationCode] : ''),
-          prompt: JSON.stringify({ message, expectation: expectation ?? 'not_provided' }),
-          options: { temperature: 0 },
-        }, { timeout });
+        response = await generate(assessmentPayload(message, expectation, validationCode), { timeout });
       } catch (err) {
         reportTransport({
           code: typeof err.code === 'string' && /^[A-Z_]+$/.test(err.code) ? err.code : 'UNKNOWN',

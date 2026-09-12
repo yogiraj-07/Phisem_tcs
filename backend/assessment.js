@@ -68,4 +68,15 @@ function parseAssessment(raw, message, expectation) {
     expectation: expectation ?? null,
   };
 }
-module.exports = { modelSchema, systemPrompt, parseAssessment, validationHints };
+// JSON mode avoids runtime-specific compilation of the full schema into grammar.
+// Field constraints are instructions here and are enforced by parseAssessment.
+function assessmentPayload(message, expectation, validationCode) {
+  return {
+    model: 'llama3.2:3b', stream: false, format: 'json',
+    system: systemPrompt + '\nRequired JSON structure: ' + JSON.stringify(modelSchema) +
+      (validationCode ? '\nA prior attempt failed validation. Reassess the original message. Correction: ' + validationHints[validationCode] : ''),
+    prompt: JSON.stringify({ message, expectation: expectation ?? 'not_provided' }),
+    options: { temperature: 0 },
+  };
+}
+module.exports = { modelSchema, systemPrompt, parseAssessment, validationHints, assessmentPayload };

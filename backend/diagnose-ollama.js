@@ -1,6 +1,6 @@
 // Uses only a fixed mock message; never reads user submissions or environment secrets.
 const axios = require('axios');
-const { modelSchema, systemPrompt, parseAssessment } = require('./assessment');
+const { assessmentPayload, parseAssessment } = require('./assessment');
 
 async function diagnose(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), log = console.log) {
   const message = 'Your study group meets tomorrow at 10 AM.';
@@ -9,12 +9,7 @@ async function diagnose(generate = (payload, options) => axios.post('http://127.
       model: 'llama3.2:3b', stream: false,
       prompt: 'Return JSON with risk_score equal to 10.',
       format: { type: 'object', properties: { risk_score: { type: 'integer' } }, required: ['risk_score'] },
-    } : {
-      model: 'llama3.2:3b', stream: false, format: modelSchema,
-      system: systemPrompt,
-      prompt: JSON.stringify({ message, expectation: 'not_provided' }),
-      options: { temperature: 0 },
-    };
+    } : assessmentPayload(message);
     log(`Testing ${stage} through Node/Axios...`);
     let response;
     try {
