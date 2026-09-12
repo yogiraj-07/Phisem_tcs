@@ -100,3 +100,55 @@ test('model failure and invalid evidence produce errors, not verdicts', async ()
     assert.equal((await post({ message: 'Hello' })).status, 502);
   });
 });
+
+test('invalid output is corrected once using a specific hint and the original input', async () => {
+  const message = 'You are selected for training.';
+  const inputs = [];
+  await withApi(async (payload, options) => {
+    inputs.push(payload);
+    assert.ok(options.timeout > 0 && options.timeout <= 60000);
+    return { data: { response: JSON.stringify(inputs.length === 1 ? {
+      ...mockResult, risk_score: 45, evidence: [{ category: 'unexpected_claim', quote: 'selected', reason: 'Selection was unexpected.' }],
+    } : { ...mockResult, needs_context: true }) } };
+  }, async post => {
+    const { status, data } = await post({ message });
+    assert.equal(status, 200);
+    assert.equal(data.follow_up.id, 'expectation');
+    assert.equal(data.sender_status, 'UNVERIFIED');
+  });
+  assert.equal(inputs.length, 2);
+  assert.equal(inputs[0].prompt, inputs[1].prompt);
+  assert.match(inputs[1].system, /Correction: Do not label a claim unexpected/);
+  assert.ok(!inputs[1].system.includes('Selection was unexpected.'));
+});
+test('persistent invalid evidence stops after two calls without a verdict', async () => {
+  let calls = 0;
+  await withApi(async () => {
+    calls++;
+    return { data: { response: JSON.stringify({ ...mockResult, risk_score: 80, evidence: [
+      { category: 'credential_request', quote: 'a fabricated OTP request', reason: 'Invented evidence' },
+    ] }) } };
+  }, async post => {
+    const { status, data } = await post({ message: 'Hello' });
+    assert.equal(status, 502);
+    assert.equal(data.risk, undefined);
+    assert.match(data.error, /automatic retry/);
+  });
+  assert.equal(calls, 2);
+});
+test('fenced JSON is accepted without changing values; malformed fields retain codes', () => {
+  const raw = '```json\n' + JSON.stringify(mockResult) + '\n```';
+  assert.equal(parseAssessment(raw, 'Hello').risk_score, mockResult.risk_score);
+  for (const [raw, code] of [
+    ['not JSON', 'INVALID_JSON'],
+    [JSON.stringify({ ...mockResult, needs_context: 'true' }), 'INVALID_FIELDS'],
+    [JSON.stringify({ ...mockResult, risk_score: 59 }), 'RISK_WITHOUT_EVIDENCE'],
+  ]) assert.throws(() => parseAssessment(raw, 'Hello'), err => err.code === code);
+});
+test('transport errors are not retried', async () => {
+  let calls = 0;
+  await withApi(async () => { calls++; throw { code: 'ECONNREFUSED' }; }, async post => {
+    assert.equal((await post({ message: 'Hello' })).status, 503);
+  });
+  assert.equal(calls, 1);
+});

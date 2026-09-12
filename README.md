@@ -59,3 +59,9 @@ Results include `evidence` (category, exact quote, reason), `context_status`, `f
 If expectation matters, the UI asks whether you applied, initiated or expected the message. Select Yes / No / Not sure to resubmit the same message with `expectation: "yes" | "no" | "unsure"`. This is user-reported context, never sender authentication. Not sure can retain More context needed; the question is not repeated. Editing the message clears its assessment and answer.
 
 Mock regression example: `You are selected for the Pilot Training Course. Visit https://training.example.` Expect a contextual question when the model identifies that expectation matters, no invented OTP/payment claim, and no link-only risk flag. Try all three answers separately. Model-generated question selection and risk remain subject to real-model evaluation.
+
+## Invalid model assessments
+
+The backend retries an invalid model assessment once with a fixed correction for the validation failure. Both attempts share a 60-second budget; transport errors are not retried. Only an enclosing JSON code fence is normalized. Evidence, score and context checks are retained, and no verdict is guessed when both attempts fail.
+
+The backend terminal prints `[analysis validation] CODE` without the submitted message or model response. Codes include INVALID_JSON, INVALID_FIELDS, INVALID_EVIDENCE, QUOTE_NOT_IN_MESSAGE, RISK_WITHOUT_EVIDENCE and EXPECTATION_REQUIRED. If the UI still reports a failed assessment after retry, use this code to identify the failing check.
