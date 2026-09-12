@@ -65,3 +65,7 @@ Mock regression example: `You are selected for the Pilot Training Course. Visit 
 The backend retries an invalid model assessment once with a fixed correction for the validation failure. Both attempts share a 60-second budget; transport errors are not retried. Only an enclosing JSON code fence is normalized. Evidence, score and context checks are retained, and no verdict is guessed when both attempts fail.
 
 The backend terminal prints `[analysis validation] CODE` without the submitted message or model response. Codes include INVALID_JSON, INVALID_FIELDS, INVALID_EVIDENCE, QUOTE_NOT_IN_MESSAGE, RISK_WITHOUT_EVIDENCE and EXPECTATION_REQUIRED. If the UI still reports a failed assessment after retry, use this code to identify the failing check.
+
+## Ollama works in the CLI but Phisem fails
+
+From the backend folder run `node diagnose-ollama.js`. This tests a basic schema and the full Phisem request using the same Node/Axios transport as Express, with a fixed mock study-group message. It reports HTTP/transport errors or a validation code. No user messages are read. If both tests pass, restart the backend and reproduce the website request. The backend logs `[ollama request]` with only error code and HTTP status, not submitted content.

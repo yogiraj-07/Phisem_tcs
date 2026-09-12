@@ -152,3 +152,23 @@ test('transport errors are not retried', async () => {
   });
   assert.equal(calls, 1);
 });
+
+test('diagnostic exercises basic and full requests and identifies HTTP rejection', async () => {
+  const { diagnose } = require('./diagnose-ollama');
+  const logs = [];
+  let calls = 0;
+  const ok = await diagnose(async payload => {
+    calls++;
+    if (calls === 1) return { status: 200, data: { response: '{"risk_score":10}' } };
+    assert.equal(payload.format.properties.evidence.type, 'array');
+    throw { code: 'ERR_BAD_REQUEST', response: { status: 400, data: { error: 'schema rejected' } } };
+  }, line => logs.push(line));
+  assert.equal(ok, false);
+  assert.equal(calls, 2);
+  assert.ok(logs.some(line => line.includes('HTTP=400')));
+  assert.ok(logs.some(line => line.includes('schema rejected')));
+});
+test('diagnostic validates successful full response', async () => {
+  const { diagnose } = require('./diagnose-ollama');
+  assert.equal(await diagnose(async () => ({ status: 200, data: { response: JSON.stringify(mockResult) } }), () => {}), true);
+});

@@ -3,7 +3,7 @@ const axios = require('axios');
 const cors = require('cors');
 const { modelSchema, systemPrompt, parseAssessment, validationHints } = require('./assessment');
 
-function createApp(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), reportValidation = code => console.warn('[analysis validation]', code)) {
+function createApp(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), reportValidation = code => console.warn('[analysis validation]', code), reportTransport = detail => console.warn('[ollama request]', detail)) {
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: '16kb' }));
@@ -35,6 +35,13 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
           options: { temperature: 0 },
         }, { timeout });
       } catch (err) {
+        reportTransport({
+          code: typeof err.code === 'string' && /^[A-Z_]+$/.test(err.code) ? err.code : 'UNKNOWN',
+          status: Number.isInteger(err.response?.status) ? err.response.status : null,
+        });
+        if (err.response?.status === 400) {
+          return res.status(502).json({ error: 'Ollama rejected the analysis request. Run node diagnose-ollama.js from the backend folder to check the full request.' });
+        }
         if (err.code === 'ECONNABORTED' || err.code === 'ETIMEDOUT') {
           return res.status(504).json({ error: 'AI analysis timed out. The model may still be loading. Try again after it finishes loading.' });
         }
