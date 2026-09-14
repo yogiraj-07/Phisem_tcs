@@ -42,7 +42,7 @@ export const HowItWorks: React.FC = () => {
           >
             {steps.map((step, idx) => (
               <React.Fragment key={`desktop-${idx}`}>
-                <div className="flex flex-col items-center text-center w-[280px] sm:w-[380px] lg:w-[420px] bg-white p-10 sm:p-14 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group flex-shrink-0">
+                <div className="flex flex-col items-center text-center w-70 sm:w-95 lg:w-105 bg-white p-10 sm:p-14 rounded-3xl border border-gray-100 shadow-xl shadow-gray-200/50 hover:-translate-y-2 hover:shadow-2xl transition-all duration-300 group shrink-0">
                   <div className="bg-brand-50 p-6 sm:p-8 rounded-2xl mb-8 group-hover:scale-110 group-hover:bg-brand-100 transition-all duration-500 shadow-sm">
                     {step.icon}
                   </div>
@@ -51,7 +51,7 @@ export const HowItWorks: React.FC = () => {
                 </div>
                 
                 {idx < steps.length - 1 && (
-                  <div className="flex-shrink-0 text-brand-300/60 drop-shadow-sm">
+                  <div className="shrink-0 text-brand-300/60 drop-shadow-sm">
                     <ArrowRight className="h-10 w-10 sm:h-14 sm:w-14" />
                   </div>
                 )}
@@ -65,7 +65,7 @@ export const HowItWorks: React.FC = () => {
             {steps.map((step, idx) => (
               <React.Fragment key={`mobile-${idx}`}>
                 <div className="flex flex-row items-center text-left w-full bg-white p-5 rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50 gap-5">
-                  <div className="bg-brand-50 p-4 rounded-xl shadow-sm flex-shrink-0">
+                  <div className="bg-brand-50 p-4 rounded-xl shadow-sm shrink-0">
                     {step.icon}
                   </div>
                   <div className="flex-col flex">
@@ -75,7 +75,7 @@ export const HowItWorks: React.FC = () => {
                 </div>
                 
                 {idx < steps.length - 1 && (
-                  <div className="flex-shrink-0 text-brand-300/60 drop-shadow-sm py-1">
+                  <div className="shrink-0 text-brand-300/60 drop-shadow-sm py-1">
                     <ArrowRight className="h-6 w-6 rotate-90" />
                   </div>
                 )}

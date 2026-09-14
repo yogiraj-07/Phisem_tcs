@@ -94,10 +94,10 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
             <div className="grid gap-3 sm:gap-4 md:grid-cols-2">
               {result.evidence.map((flag, idx) => (
                 <div key={idx} className="flex items-start gap-3 p-4 bg-white border border-red-100 shadow-sm rounded-xl transition-transform hover:-translate-y-0.5 hover:shadow-md">
-                  <div className="bg-red-50 p-2 rounded-lg flex-shrink-0">
+                  <div className="bg-red-50 p-2 rounded-lg shrink-0">
                     <Fingerprint className="h-5 w-5 text-status-danger opacity-90" />
                   </div>
-                  <span className="font-semibold text-text-main text-sm sm:text-base leading-snug mt-1">{flag.reason}<span className="block mt-2 text-sm font-normal break-words">“{flag.quote}”</span></span>
+                  <span className="font-semibold text-text-main text-sm sm:text-base leading-snug mt-1">{flag.reason}<span className="block mt-2 text-sm font-normal wrap-break-word">“{flag.quote}”</span></span>
                 </div>
               ))}
             </div>
@@ -111,8 +111,8 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
                 <BrainCircuit className="h-5 w-5 text-brand-500" /> 
                 Analysis explanation
              </h3>
-             <div className="bg-white p-5 sm:p-6 rounded-xl border border-gray-100 shadow-sm flex-grow">
-               <p className="text-text-main leading-relaxed text-sm sm:text-base whitespace-pre-wrap break-words font-medium">
+             <div className="bg-white p-5 sm:p-6 rounded-xl border border-gray-100 shadow-sm grow">
+               <p className="text-text-main leading-relaxed text-sm sm:text-base whitespace-pre-wrap wrap-break-word font-medium">
                  {result.explanation}
                </p>
              </div>
@@ -124,9 +124,9 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
                 <Lightbulb className="h-5 w-5 text-status-success" /> 
                 Prescribed Action
              </h3>
-             <div className="bg-brand-50/50 border border-brand-100 p-5 sm:p-6 rounded-xl shadow-sm flex-grow flex flex-col justify-center">
+             <div className="bg-brand-50/50 border border-brand-100 p-5 sm:p-6 rounded-xl shadow-sm grow flex flex-col justify-center">
                <div className="flex items-start gap-4">
-                 <div className="bg-white p-2.5 rounded-xl shadow-sm border border-brand-50 flex-shrink-0">
+                 <div className="bg-white p-2.5 rounded-xl shadow-sm border border-brand-50 shrink-0">
                    <ShieldCheck className="h-6 w-6 sm:h-8 sm:w-8 text-brand-600" />
                  </div>
                  <p className="font-bold text-brand-900 text-sm sm:text-base leading-relaxed mt-1">{result.safe_action}</p>

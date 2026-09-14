@@ -22,7 +22,7 @@ export const CapabilityTable: React.FC = () => {
         <table className="min-w-full divide-y divide-gray-100">
           <thead className="bg-white">
             <tr>
-              <th scope="col" className="px-6 sm:px-8 py-4 text-left text-xs font-extrabold text-text-muted uppercase tracking-widest w-1/3 min-w-[220px]">
+              <th scope="col" className="px-6 sm:px-8 py-4 text-left text-xs font-extrabold text-text-muted uppercase tracking-widest w-1/3 min-w-55">
                 Core Feature
               </th>
               <th scope="col" className="px-6 sm:px-8 py-4 text-left text-xs font-extrabold text-text-muted uppercase tracking-widest min-w-[320px]">

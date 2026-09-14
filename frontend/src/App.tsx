@@ -33,7 +33,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-surface-bg font-sans text-text-main flex flex-col selection:bg-brand-200 selection:text-brand-900">
       <Navbar />
-      <main className="flex-grow pt-16 sm:pt-20">
+      <main className="grow pt-16 sm:pt-20">
         <Hero />
         
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 -mt-16 sm:-mt-24 relative z-10">
