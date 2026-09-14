@@ -1,6 +1,7 @@
 import React from "react";
 import { AnalysisResponse } from "../types";
 import { ShieldCheck, AlertTriangle, ShieldAlert, AlertCircle, Info, Lightbulb, Server, Fingerprint, BrainCircuit, Activity } from "lucide-react";
+import { UrlFindings } from './UrlFindings';
 import CountUp from "./CountUp";
 import AnimatedContent from "./AnimatedContent";
 
@@ -82,6 +83,7 @@ export const ResultCard: React.FC<ResultCardProps> = ({ result }) => {
         {result.context_status === 'NEEDS_CONTEXT' && <p className="rounded-lg bg-amber-50 p-3 font-semibold text-amber-900">More context needed. This assessment is provisional.</p>}
         {result.expectation && <p className="text-sm text-text-muted">Your context: {result.expectation === 'yes' ? 'You expected or initiated this message.' : result.expectation === 'no' ? 'You did not expect or initiate this message.' : 'You are not sure whether this message was expected.'}</p>}
         <p className="text-sm text-text-muted">Source: {result.analysis_source}. Risk score is an estimate, not a probability or guarantee of safety.</p>
+        <UrlFindings analysis={result.url_analysis} />
         {/* Red Flags Section */}
         {result.evidence && result.evidence.length > 0 && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 delay-100">

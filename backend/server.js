@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const { inspectUrls } = require('./url-analysis');
 const { assessmentPayload, parseAssessment, validationHints } = require('./assessment');
 
 function createApp(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), reportValidation = code => console.warn('[analysis validation]', code), reportTransport = detail => console.warn('[ollama request]', detail)) {
@@ -21,6 +22,7 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
     if (expectation !== undefined && !['yes', 'no', 'unsure'].includes(expectation)) {
       return res.status(400).json({ error: 'Expectation must be yes, no, or unsure.' });
     }
+    const urlAnalysis = inspectUrls(message);
     const deadline = Date.now() + 60000;
     let validationCode;
     for (let attempt = 0; attempt < 2; attempt++) {
@@ -28,7 +30,7 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
       try {
         const timeout = deadline - Date.now();
         if (timeout <= 0) throw Object.assign(new Error('timeout'), { code: 'ETIMEDOUT' });
-        response = await generate(assessmentPayload(message, expectation, validationCode), { timeout });
+        response = await generate(assessmentPayload(message, expectation, validationCode, urlAnalysis), { timeout });
       } catch (err) {
         reportTransport({
           code: typeof err.code === 'string' && /^[A-Z_]+$/.test(err.code) ? err.code : 'UNKNOWN',
@@ -49,7 +51,10 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
         return res.status(503).json({ error: 'Ollama could not complete analysis. Run ollama run llama3.2:3b on the backend computer to check that the model works.' });
       }
       try {
-        return res.json(parseAssessment(response?.data?.response, message, expectation));
+        return res.json({
+          ...parseAssessment(response?.data?.response, message, expectation),
+          url_analysis: urlAnalysis,
+        });
       } catch (err) {
         validationCode = Object.hasOwn(validationHints, err.code) ? err.code : 'INVALID_FIELDS';
         // Log only a fixed diagnostic code, never the message or model output.

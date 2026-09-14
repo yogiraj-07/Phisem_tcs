@@ -34,7 +34,7 @@ Use only mock examples, never real OTPs, passwords, bank details or student data
 
 ## Verification
 
-- Backend: `cd backend` then `node --test analysis.test.js`.
+- Backend: `cd backend` then `node --test analysis.test.js url-analysis.test.js`.
 - Frontend: `cd frontend` then `npm run lint` and `npm run build`.
 
 Backend tests use a stubbed model to verify API behavior, validation, scoring and failure paths. A real local Ollama run is needed to evaluate model quality.
@@ -75,3 +75,21 @@ From the backend folder run `node diagnose-ollama.js`. This tests a basic schema
 Assessment requests use `format: "json"` and include field instructions and completed assessment examples in the system prompt. This avoids asking the Ollama runtime to compile the full constrained schema, which caused HTTP 400 `failed to parse grammar` on the reported installation. Backend field/evidence/context validation and the single correction retry still apply. The diagnostic and Express share the same assessment request builder. Real-model success must be checked locally; JSON mode alone does not ensure correct fields or conclusions.
 
 The prompt uses completed JSON assessments rather than a serialized schema: the reported model copied schema metadata into its answer. Examples contrast a routine meeting notice, OTP safety advice, a credential request and an ambiguous selection offer. These in-prompt examples are not an independent accuracy benchmark. If the mock diagnostic fails validation, it now prints the fixed mock response so further debugging does not require a separate command.
+
+## Local URL structure checks — no API key required
+
+Every successful assessment now includes server-owned `url_analysis`. It extracts explicit HTTP/HTTPS and www links, parses the actual hostname using Node's URL parser, and reports user-information (@), IP-host, internationalized-domain, HTTP, non-default-port and backslash observations. It does not infer domain ownership from the last two labels or assume that an unfamiliar domain is malicious.
+
+At most five unique URLs are inspected; additional links are counted as omitted. A www link is parsed using an assumed HTTPS scheme. Common surrounding punctuation is removed. Bare domains, obfuscated URLs, hidden HTML/Markdown display-target relationships and other schemes are not fully covered by this first version. This is a text extractor, not a browser navigation validator.
+
+No link is opened: there is no DNS lookup, reputation service, redirect inspection or page download. Reputation and page safety always remain NOT_CHECKED, including when there are no structural observations. The backend does not assign risk points from these observations; Ollama may consider the observations alongside the message. Model accuracy remains unverified. The report displays plain hostnames, never clickable targets, and excludes URL user information, paths, queries and fragments.
+
+The Local URL checks panel appears below the sender/context notices after successful analysis. It currently requires a successful model response like the rest of the assessment.
+
+Mock checks:
+- `https://bank.example@offers.example/` should show actual hostname `offers.example` and an @ observation.
+- `https://bank.example.attacker.example/` should show the complete hostname, not claim it belongs to bank.example.
+- `http://127.0.0.1:8080/` should show IP, HTTP and port observations without connecting.
+- `https://example.org/` should say no structural observations, with reputation and page safety still not checked.
+
+Verification for this change: tests are included in `backend/url-analysis.test.js`; run the backend suite plus frontend type-check/build locally. The authoring environment was unavailable, so these new tests and the frontend build were not executed for this change.

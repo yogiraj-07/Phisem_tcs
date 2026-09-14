@@ -14,7 +14,18 @@ export const analyzeMessage = async (request: AnalysisRequest): Promise<Analysis
   }
   const data = await response.json().catch(() => null);
   if (!response.ok) throw new Error(data?.error || 'Analysis failed. Please retry.');
-  if (!data || !['SAFE', 'SUSPICIOUS', 'HIGH RISK'].includes(data.risk) ||
+  const urls = data?.url_analysis;
+  const validUrls = urls && urls.scope === 'LOCAL_STRUCTURE_ONLY' &&
+    urls.reputation === 'NOT_CHECKED' && urls.page_safety === 'NOT_CHECKED' &&
+    Number.isInteger(urls.omitted) && urls.omitted >= 0 &&
+    Array.isArray(urls.links) && urls.links.length <= 5 && urls.links.every((link: any) =>
+      link && ['PARSED', 'INVALID_URL'].includes(link.status) &&
+      (link.hostname === null || typeof link.hostname === 'string') &&
+      [null, 'http:', 'https:'].includes(link.protocol) &&
+      (link.port === null || typeof link.port === 'string') &&
+      Array.isArray(link.observations) && link.observations.every((item: any) =>
+        item && typeof item.code === 'string' && typeof item.detail === 'string'));
+  if (!validUrls || !data || !['SAFE', 'SUSPICIOUS', 'HIGH RISK'].includes(data.risk) ||
       !Number.isInteger(data.risk_score) || data.risk_score < 0 || data.risk_score > 100 ||
       !Array.isArray(data.red_flags) || !data.red_flags.every((flag: unknown) => typeof flag === 'string') ||
       typeof data.explanation !== 'string' || typeof data.safe_action !== 'string' ||
