@@ -4,11 +4,13 @@ const { assessCase, runEvaluation } = require('./evaluate-ollama');
 const { parseAssessment, examples } = require('./assessment');
 const { inspectUrls } = require('./url-analysis');
 const { cases } = require('./evaluation-cases');
+const { applySafeAction } = require('./safe-action');
 
 function response(sample, risk_score = 10, evidence = []) {
-  return { ...parseAssessment(JSON.stringify({ risk_score, evidence, needs_context: sample.context,
+  const urls = inspectUrls(sample.message);
+  return { ...applySafeAction(parseAssessment(JSON.stringify({ risk_score, evidence, needs_context: sample.context,
     explanation: 'Message purpose: Mock.\n\nRisk basis: Mock.\n\nMissing context: Mock.', safe_action: 'Use a known contact.' }), sample.message, sample.expectation),
-    url_analysis: inspectUrls(sample.message) };
+    urls), url_analysis: urls };
 }
 
 test('evaluation distinguishes false alarms, missed high risk and transport errors', async () => {
@@ -24,6 +26,7 @@ test('evaluation distinguishes false alarms, missed high risk and transport erro
   assert.equal(report.summary.errors, 1);
   assert.deepEqual(report.summary.false_alarms, { count: 1, valid_benign_cases: 1 });
   assert.deepEqual(report.summary.missed_high_risk, { count: 1, valid_phishing_cases: 1 });
+  assert.deepEqual(report.summary.phishing_coverage, { total_cases: 2, high_risk_results: 0, lower_risk_results: 1, no_valid_assessment: 1, not_run: 0 });
 });
 
 test('unavailable provider stops evaluation without counting unrun cases as passes', async () => {
@@ -32,6 +35,23 @@ test('unavailable provider stops evaluation without counting unrun cases as pass
   assert.equal(report.summary.errors, 1);
   assert.equal(report.summary.not_run, cases.length - 1);
   assert.equal(report.summary.passed, 0);
+  assert.equal(report.summary.phishing_coverage.not_run, cases.filter(sample => sample.group === 'phishing').length);
+});
+
+test('a correct low-risk label does not pass with advice to open an unverified link', () => {
+  const sample = cases.find(item => item.id === 'reference-link');
+  const valid = response(sample);
+  assert.equal(assessCase(sample, valid).passed, true);
+  const unsafe = assessCase(sample, { ...valid, safe_action: 'Click the link to access the notes if needed.', safe_action_source: 'MODEL' });
+  assert.equal(unsafe.valid, true);
+  assert.equal(unsafe.passed, false);
+  assert.equal(unsafe.action_policy_ok, false);
+});
+
+test('failed attempts survive into the saved evaluation results', async () => {
+  const diagnostics = [{ attempt: 1, outcome: 'INVALID', validation_code: 'QUOTE_NOT_IN_MESSAGE', raw_response: '{"example":"mock only"}' }];
+  const report = await runEvaluation(async () => ({ status: 502, data: { error: 'invalid output' }, diagnostics }), [cases[0]], () => {});
+  assert.deepEqual(report.results[0].diagnostics, diagnostics);
 });
 
 test('evaluation rejects contradictory scores, invented quotes and verification claims', () => {

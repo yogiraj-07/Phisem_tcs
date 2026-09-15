@@ -1,7 +1,11 @@
 const { writeFile } = require('node:fs/promises');
-const { createApp } = require('./server');
-const { parseAssessment } = require('./assessment');
+const { createHash } = require('node:crypto');
+const { createApp, requestOllama } = require('./server');
+const { parseAssessment, systemPrompt, assessmentPayload } = require('./assessment');
 const { cases } = require('./evaluation-cases');
+const { createEvaluationRecorder } = require('./evaluation-diagnostics');
+const { inspectUrls } = require('./url-analysis');
+const { independentLinkAction } = require('./safe-action');
 
 function assessCase(sample, data) {
   const reasons = [];
@@ -25,22 +29,36 @@ function assessCase(sample, data) {
   if (sample.category && !data.evidence.some(item => item.category === sample.category)) reasons.push(`Missing ${sample.category} evidence`);
   const shouldAsk = sample.context && sample.expectation === undefined;
   if (shouldAsk ? data.follow_up?.id !== 'expectation' : data.follow_up !== null) reasons.push('Incorrect follow-up question behavior');
+  const actionPolicyOk = inspectUrls(sample.message).links.length === 0 ||
+    (data.safe_action_source === 'APPLICATION_POLICY' && data.safe_action === independentLinkAction(data));
+  if (!actionPolicyOk) reasons.push('Unverified link did not receive the independent verification step');
   // Format is reported separately; more paragraphs are not evidence of accuracy.
   const explanationSections = ['Message purpose:', 'Risk basis:', 'Missing context:'].every(label => data.explanation.includes(label));
-  return { passed: reasons.length === 0, valid: true, reasons, explanation_sections: explanationSections };
+  return { passed: reasons.length === 0, valid: true, reasons, explanation_sections: explanationSections, action_policy_ok: actionPolicyOk };
 }
 
-function summarize(rows, total) {
+function summarize(rows, samples) {
   const valid = rows.filter(row => row.valid);
   const benign = valid.filter(row => row.group === 'benign');
   const phishing = valid.filter(row => row.group === 'phishing');
+  const allPhishing = rows.filter(row => row.group === 'phishing');
+  const plannedPhishing = samples.filter(sample => sample.group === 'phishing').length;
   return {
-    total, evaluated: rows.length, not_run: total - rows.length,
+    total: samples.length, evaluated: rows.length, not_run: samples.length - rows.length,
     passed: rows.filter(row => row.passed).length,
     failed_behavior: valid.filter(row => !row.passed).length,
     errors: rows.filter(row => !row.valid).length,
     false_alarms: { count: benign.filter(row => row.actual.risk !== 'SAFE').length, valid_benign_cases: benign.length },
     missed_high_risk: { count: phishing.filter(row => row.actual.risk !== 'HIGH RISK').length, valid_phishing_cases: phishing.length },
+    phishing_coverage: {
+      total_cases: plannedPhishing,
+      high_risk_results: phishing.filter(row => row.actual.risk === 'HIGH RISK').length,
+      lower_risk_results: phishing.filter(row => row.actual.risk !== 'HIGH RISK').length,
+      no_valid_assessment: allPhishing.filter(row => !row.valid).length,
+      not_run: plannedPhishing - allPhishing.length,
+    },
+    action_policy_failures: valid.filter(row => row.action_policy_ok === false).length,
+    human_review_required: valid.length,
     explanation_sections: { count: valid.filter(row => row.explanation_sections).length, valid_results: valid.length },
   };
 }
@@ -58,24 +76,28 @@ async function runEvaluation(submit, samples = cases, log = console.log) {
       } else {
         row = { ...assessCase(sample, response.data), actual: response.data };
       }
+      if (response.diagnostics) row.diagnostics = response.diagnostics;
     } catch {
       row = { valid: false, passed: false, reasons: ['Request failed or timed out; no assessment'] };
     }
     row = { id: sample.id, group: sample.group, input: sample.message, expectation: sample.expectation ?? null,
       expected: { risks: sample.risks, needs_context: sample.context }, ...row, duration_ms: Date.now() - start };
     rows.push(row);
-    log(`${row.passed ? 'PASS' : row.valid ? 'FAIL' : 'ERROR'} ${sample.id}${row.actual ? `: ${row.actual.risk}, ${row.actual.risk_score}/100` : ''}${row.reasons.length ? ' — ' + row.reasons.join('; ') : ''}`);
+    log(`${row.passed ? 'CHECKS PASS' : row.valid ? 'CHECKS FAIL' : 'ERROR'} ${sample.id}${row.actual ? `: ${row.actual.risk}, ${row.actual.risk_score}/100` : ''}${row.reasons.length ? ' — ' + row.reasons.join('; ') : ''}`);
     // Do not keep submitting if the provider is unavailable. Unrun cases remain visible.
     if (row.status === 503) { log('Ollama unavailable; stopping. Remaining cases are marked not run.'); break; }
   }
-  return { created_at: new Date().toISOString(),
-    scope: 'Small hand-labeled mock regression set; not a production accuracy estimate. Explanation quality still needs human review.',
-    summary: summarize(rows, samples.length), results: rows };
+  return { created_at: new Date().toISOString(), evaluation_version: 2,
+    model: assessmentPayload('').model,
+    prompt_sha256: createHash('sha256').update(systemPrompt).digest('hex'),
+    scope: 'Known hand-labeled mock regression cases used during development. Automated checks do not establish correct reasoning or production accuracy; review every explanation and action.',
+    summary: summarize(rows, samples), results: rows };
 }
 
 async function main() {
   // Start this checkout's backend so an outdated running server cannot skew the evaluation.
-  const server = createApp().listen(0, '127.0.0.1');
+  const recorder = createEvaluationRecorder(requestOllama);
+  const server = createApp(recorder.generate).listen(0, '127.0.0.1');
   await new Promise((resolve, reject) => { server.once('listening', resolve); server.once('error', reject); });
   try {
     const endpoint = `http://127.0.0.1:${server.address().port}/analyze`;
@@ -83,11 +105,11 @@ async function main() {
     const report = await runEvaluation(async body => {
       const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body), signal: AbortSignal.timeout(65000) });
-      return { status: response.status, data: await response.json() };
+      return { status: response.status, data: await response.json(), diagnostics: recorder.getAttempts(body) };
     });
     await writeFile('evaluation-report.json', JSON.stringify(report, null, 2) + '\n');
     console.log(JSON.stringify(report.summary, null, 2));
-    console.log('Saved evaluation-report.json. Review explanations and failures; this small mock set does not establish production accuracy.');
+    console.log('Saved evaluation-report.json. Failed mock attempts include validation codes and model output. CHECKS PASS does not verify reasoning: review explanations and model_safe_action as well as the final action.');
     process.exitCode = report.summary.passed === report.summary.total ? 0 : 1;
   } finally { await new Promise(resolve => server.close(resolve)); }
 }

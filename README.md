@@ -34,7 +34,7 @@ Use only mock examples, never real OTPs, passwords, bank details or student data
 
 ## Verification
 
-- Backend: `cd backend` then `node --test analysis.test.js url-analysis.test.js evaluation.test.js`.
+- Backend: `cd backend` then `node --test analysis.test.js url-analysis.test.js evaluation.test.js evaluation-fixes.test.js`.
 - Frontend: `cd frontend` then `npm run lint` and `npm run build`.
 
 Backend tests use a stubbed model to verify API behavior, validation, scoring and failure paths. A real local Ollama run is needed to evaluate model quality.
@@ -54,6 +54,18 @@ This starts the backend from the current checkout on a temporary local port and 
 The summary counts false alarms on benign cases, high-risk phishing cases rated below HIGH RISK, context/evidence failures, invalid/failed requests and cases not run. It also reports explanation-section coverage separately; longer answers do not count as more accurate. Full mock inputs, actual assessments and failure reasons are saved in `backend/evaluation-report.json` (ignored by Git). Exit code 1 means a case failed or the run was incomplete; check the report to distinguish model behavior from unavailable Ollama.
 
 These are developer-labeled regression examples, not an independent production benchmark. Inspect the explanations and exact quotes yourself, especially for incorrect claims about absent requests, sender identity or websites. Neither accuracy improvement nor probability calibration is established by prompt changes or unit tests. Real-model results are required before claiming an improvement.
+
+### Findings from the first real-model report
+
+The submitted 18-case run passed 12 automated checks, returned 3 behavior failures and produced 3 invalid assessments. One sign-in notification was misread as a credential request; two selection cases mishandled expectation or uncertainty. The code, OTP-threat and gift-card-threat cases returned 502 without the exact failed model output. Four of six phishing cases produced a HIGH RISK result; two had no assessment. The zero count of missed high-risk cases applied only to the four valid phishing responses.
+
+Human review also found errors in cases labeled passed: recommendations to open unverified links, unsupported urgency/threat claims, and irrelevant advice. Automated labels and explanation headings do not validate reasoning. The prompt now defines evidence categories more precisely, contrasts account notifications with disclosure requests, and tells the model to use supplied expectation answers. A yes/no answer combined with `needs_context: true` is rejected with `CONTEXT_ALREADY_PROVIDED` and receives the existing single correction retry. Other unknowns may still be described in the explanation; this flag specifically refers to the expectation question. These prompt changes remain subject to real-model retesting.
+
+For any detected link, the backend supplies an independent verification action instead of using the model's link recommendation. `safe_action_source` identifies `APPLICATION_POLICY` or `MODEL`; the UI explains the independent step. This safeguard leaves scores and evidence unchanged and does not validate the model's explanation. It only covers links the local extractor detects.
+
+Evaluation report version 2 includes `phishing_coverage`, which counts every planned phishing case including failures and cases not run. It separately counts action-policy failures and marks every valid result for human review. The fixture messages and expected risk bands are unchanged; the new safety/context checks make its overall pass count stricter than version 1. These are now known regression cases used to develop the prompt, not unseen evaluation data.
+
+Each mock request now includes `diagnostics` with its model attempts. Invalid attempts save a validation code and bounded raw mock response; valid attempts retain `model_safe_action` so an unsafe model recommendation is still visible even if the application replaces it. Transport diagnostics contain only code/status. This capture is installed only by the standalone evaluator and limited to fixed fixture inputs; normal website responses and server logs do not expose these diagnostics. `model` and `prompt_sha256` identify the evaluated setup. Run `node evaluate-ollama.js` again and inspect the full report, including cases marked `CHECKS PASS`.
 
 ## Checking the contextual review
 
@@ -80,7 +92,7 @@ Mock regression example: `You are selected for the Pilot Training Course. Visit 
 
 The backend retries an invalid model assessment once with a fixed correction for the validation failure. Both attempts share a 60-second budget; transport errors are not retried. Only an enclosing JSON code fence is normalized. Evidence, score and context checks are retained, and no verdict is guessed when both attempts fail.
 
-The backend terminal prints `[analysis validation] CODE` without the submitted message or model response. Codes include INVALID_JSON, INVALID_FIELDS, INVALID_EVIDENCE, QUOTE_NOT_IN_MESSAGE, RISK_WITHOUT_EVIDENCE and EXPECTATION_REQUIRED. If the UI still reports a failed assessment after retry, use this code to identify the failing check.
+The backend terminal prints `[analysis validation] CODE` without the submitted message or model response. Codes include INVALID_JSON, INVALID_FIELDS, INVALID_EVIDENCE, QUOTE_NOT_IN_MESSAGE, RISK_WITHOUT_EVIDENCE, EXPECTATION_REQUIRED and CONTEXT_ALREADY_PROVIDED. If the UI still reports a failed assessment after retry, use this code to identify the failing check.
 
 ## Ollama works in the CLI but Phisem fails
 

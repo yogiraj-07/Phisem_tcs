@@ -199,7 +199,8 @@ test('prompt contains completed examples and no serialized JSON schema', () => {
   assert.ok(!payload.system.includes('"properties":'));
   assert.ok(!payload.system.includes('"type":"integer"'));
   for (const example of examples) {
-    const result = parseAssessment(JSON.stringify(example.output), example.input.message);
+    const result = parseAssessment(JSON.stringify(example.output), example.input.message,
+      example.input.expectation === 'not_provided' ? undefined : example.input.expectation);
     assert.equal(result.sender_status, 'UNVERIFIED');
   }
 });

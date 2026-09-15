@@ -10,6 +10,7 @@ const evidenceLabels: Record<string, string> = {
   deceptive_destination: 'Misleading destination',
   unexpected_claim: 'Unexpected claim',
   coercion: 'Threat or coercion',
+  remote_access: 'Request for device access',
   other: 'Other concern',
 };
 
@@ -77,6 +78,7 @@ export function ResultCard({ result }: { result: AnalysisResponse }) {
           <section aria-label="What to do next" className="rounded-xl border border-brand-100 bg-brand-50/50 p-5">
             <h3 className="font-bold text-brand-900 flex items-center gap-2"><Lightbulb className="h-5 w-5" /> What to do next</h3>
             <p className="mt-3 text-sm sm:text-base leading-relaxed text-brand-900 whitespace-pre-wrap wrap-break-word">{result.safe_action}</p>
+            {result.safe_action_source === 'APPLICATION_POLICY' && <p className="mt-3 text-xs text-text-muted">This step uses an independent contact or app because the pasted link has not been verified.</p>}
           </section>
 
           <UrlFindings analysis={result.url_analysis} />

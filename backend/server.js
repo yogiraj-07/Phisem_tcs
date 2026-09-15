@@ -3,8 +3,11 @@ const axios = require('axios');
 const cors = require('cors');
 const { inspectUrls } = require('./url-analysis');
 const { assessmentPayload, parseAssessment, validationHints } = require('./assessment');
+const { applySafeAction } = require('./safe-action');
 
-function createApp(generate = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options), reportValidation = code => console.warn('[analysis validation]', code), reportTransport = detail => console.warn('[ollama request]', detail)) {
+const requestOllama = (payload, options) => axios.post('http://127.0.0.1:11434/api/generate', payload, options);
+
+function createApp(generate = requestOllama, reportValidation = code => console.warn('[analysis validation]', code), reportTransport = detail => console.warn('[ollama request]', detail)) {
   const app = express();
   app.use(cors());
   app.use(express.json({ limit: '16kb' }));
@@ -52,7 +55,7 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
       }
       try {
         return res.json({
-          ...parseAssessment(response?.data?.response, message, expectation),
+          ...applySafeAction(parseAssessment(response?.data?.response, message, expectation), urlAnalysis),
           url_analysis: urlAnalysis,
         });
       } catch (err) {
@@ -72,4 +75,4 @@ function createApp(generate = (payload, options) => axios.post('http://127.0.0.1
   return app;
 }
 if (require.main === module) createApp().listen(5000, () => console.log('Server running on port 5000'));
-module.exports = { createApp };
+module.exports = { createApp, requestOllama };

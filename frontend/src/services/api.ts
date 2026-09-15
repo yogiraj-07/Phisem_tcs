@@ -29,6 +29,7 @@ export const analyzeMessage = async (request: AnalysisRequest): Promise<Analysis
       !Number.isInteger(data.risk_score) || data.risk_score < 0 || data.risk_score > 100 ||
       !Array.isArray(data.red_flags) || !data.red_flags.every((flag: unknown) => typeof flag === 'string') ||
       typeof data.explanation !== 'string' || typeof data.safe_action !== 'string' ||
+      !['APPLICATION_POLICY', 'MODEL'].includes(data.safe_action_source) ||
       typeof data.analysis_source !== 'string' || typeof data.llmUsed !== 'boolean' ||
       !Array.isArray(data.evidence) || !data.evidence.every((e: any) => e && typeof e.category === 'string' && typeof e.quote === 'string' && request.message.includes(e.quote) && typeof e.reason === 'string') ||
       !['NEEDS_CONTEXT', 'ASSESSED'].includes(data.context_status) ||

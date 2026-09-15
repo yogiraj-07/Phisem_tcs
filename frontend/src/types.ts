@@ -29,8 +29,8 @@ export interface AnalysisResponse {
   red_flags: string[];
   explanation: string;
   safe_action: string;
+  safe_action_source: 'APPLICATION_POLICY' | 'MODEL';
   analysis_source: string;
   llmUsed: boolean;
   sender_status: 'UNVERIFIED';
 }
-
