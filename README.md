@@ -34,10 +34,26 @@ Use only mock examples, never real OTPs, passwords, bank details or student data
 
 ## Verification
 
-- Backend: `cd backend` then `node --test analysis.test.js url-analysis.test.js`.
+- Backend: `cd backend` then `node --test analysis.test.js url-analysis.test.js evaluation.test.js`.
 - Frontend: `cd frontend` then `npm run lint` and `npm run build`.
 
 Backend tests use a stubbed model to verify API behavior, validation, scoring and failure paths. A real local Ollama run is needed to evaluate model quality.
+
+## Detailed explanations and real-model evaluation
+
+The prompt now asks for three short explanation paragraphs: **Message purpose**, **Risk basis** and **Missing context**. This fits the existing five-field JSON response format; it does not introduce a new schema or require a model download. Paragraph structure is a prompt instruction, not a new validation gate, so a shorter otherwise-valid response still works. The report leads with the explanation, exact evidence excerpts and a relevant next action. Link observations and score interpretation remain separate. No excerpt being flagged means the model found no specific warning sign, not that the sender was verified.
+
+To test actual Ollama judgments, keep Ollama running, open `backend`, and run:
+
+```powershell
+node evaluate-ollama.js
+```
+
+This starts the backend from the current checkout on a temporary local port and evaluates 18 hand-labeled mock cases through the same API, validation and retry path as the website. You do not need to start Express separately. Cases cover routine notices, credential-protection advice, expected payments, questions/code, indirect credential requests, remote access, payment threats and four expectation contexts. They are not included as completed examples in the model prompt. It can take several minutes; progress is printed after each case.
+
+The summary counts false alarms on benign cases, high-risk phishing cases rated below HIGH RISK, context/evidence failures, invalid/failed requests and cases not run. It also reports explanation-section coverage separately; longer answers do not count as more accurate. Full mock inputs, actual assessments and failure reasons are saved in `backend/evaluation-report.json` (ignored by Git). Exit code 1 means a case failed or the run was incomplete; check the report to distinguish model behavior from unavailable Ollama.
+
+These are developer-labeled regression examples, not an independent production benchmark. Inspect the explanations and exact quotes yourself, especially for incorrect claims about absent requests, sender identity or websites. Neither accuracy improvement nor probability calibration is established by prompt changes or unit tests. Real-model results are required before claiming an improvement.
 
 ## Checking the contextual review
 
@@ -92,4 +108,4 @@ Mock checks:
 - `http://127.0.0.1:8080/` should show IP, HTTP and port observations without connecting.
 - `https://example.org/` should say no structural observations, with reputation and page safety still not checked.
 
-Verification for this change: tests are included in `backend/url-analysis.test.js`; run the backend suite plus frontend type-check/build locally. The authoring environment was unavailable, so these new tests and the frontend build were not executed for this change.
+URL regression tests are included in `backend/url-analysis.test.js`; they cover extraction and server-owned observations without visiting any links.
