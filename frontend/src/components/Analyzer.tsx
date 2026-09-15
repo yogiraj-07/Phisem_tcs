@@ -5,9 +5,10 @@ import { AnalysisRequest } from "../types";
 interface AnalyzerProps {
   onAnalyze: (request: AnalysisRequest) => void;
   isLoading: boolean;
+  onMessageChange: () => void;
 }
 
-export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
+export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading, onMessageChange }) => {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -34,11 +35,12 @@ export const Analyzer: React.FC<AnalyzerProps> = ({ onAnalyze, isLoading }) => {
           <textarea
             id="message-input"
             aria-label="Message to analyze"
-            className={`w-full h-40 sm:h-48 p-4 bg-surface-bg border ${error ? 'border-status-danger ring-1 ring-status-danger' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all resize-y min-h-[120px] text-text-main text-sm sm:text-base`}
+            className={`w-full h-40 sm:h-48 p-4 bg-surface-bg border ${error ? 'border-status-danger ring-1 ring-status-danger' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all resize-y min-h-30 text-text-main text-sm sm:text-base`}
             placeholder="Paste suspicious email, SMS, or chat message here..."
             value={message}
             onChange={(e) => {
               setMessage(e.target.value);
+              onMessageChange();
               if (error) setError("");
             }}
             disabled={isLoading}
